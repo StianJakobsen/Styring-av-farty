@@ -91,7 +91,7 @@ for i=1:Ns+1
     Yh = 0;
     Nh = 0;
 
-    dx = length/100; % 10 strips
+    dx = length/100; % 100 strips
     for xL = -length/2:dx:length/2
         Ucf = abs(nu(2) + xL * nu(3)) * (nu(2) + xL * nu(3));
         Yh = Yh -0.5 * rho * T * Cd_2D * Ucf * dx; % sway force
