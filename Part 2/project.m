@@ -140,7 +140,7 @@ T_3 = num(2)/num(3);
 
 T_12 = denum(2)/denum(3); % T1 + T2
 T_nomoto = T_12 - T_3;
-%169.54
+%169.54 nice
 for i=1:Ns+1
 
     t = (i-1) * h;                      % time (s)
