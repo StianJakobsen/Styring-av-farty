@@ -1,4 +1,4 @@
-% Project in TTK4190 Guidance and Control of Vehicles 
+    % Project in TTK4190 Guidance and Control of Vehicles 
 %
 % Author:           My name
 % Study program:    My study program
@@ -54,6 +54,7 @@ Minv = inv(MRB + MA); % Added mass is included to give the total inertia
 % ocean current in NED
 Vc = 1;                             % current speed (m/s)
 betaVc = deg2rad(45);               % current direction (rad)
+
 
 % wind expressed in NED
 Vw = 10;                   % wind speed (m/s)
@@ -117,18 +118,38 @@ n = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 simdata = zeros(Ns+1,14);                % table of simulation data
 
+
+CRB_star = [0 0 0
+             0 0 m*U_d
+             0 0 m*xg*U_d];
+CA_star = [0 0 0
+            0 0 -Xudot*U_d
+            -2*Xudot*U_d 0 0];  
+M = MRB + MA;
+N = CRB_star + CA_star + D;
+
+B_delta = Bu(U_d, delta);
+D_delta = [0 0
+           0 0
+           0 0];
+       
+[num,denum] = ss2tf(-M\N, M\B_delta, eye(3), D_delta);
 for i=1:Ns+1
 
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
     
+    u_c = Vc*cos(betaVc-eta(3));
+    v_c = Vc*sin(betaVc-eta(3));
+    V_c = [u_c, v_c, 0]';
+    
     % current (should be added here)
     nu_r = nu;
-    
+    gamma_w = eta(3) - betaVw - pi;
     % wind (should be added here)
     if t > 200
-        Ywind = 0; % expression for wind moment in sway should be added.
-        Nwind = 0; % expression for wind moment in yaw should be added.
+        Ywind = 0;%1/2*rho_a*Vw*cy*sin(gamma_w)*A_Lw; % expression for wind moment in sway should be added.
+        Nwind = 0;%1/2*rho_a*Vw*cn*sin(2*gamma_w)*A_Lw*L; % expression for wind moment in yaw should be added.
     else
         Ywind = 0;
         Nwind = 0;
@@ -144,6 +165,7 @@ for i=1:Ns+1
     CA = [  0   0   Yvdot * nu_r(2) + Yrdot * nu_r(3)
             0   0   -Xudot * nu_r(1) 
           -Yvdot * nu_r(2) - Yrdot * nu_r(3)    Xudot * nu_r(1)   0];
+    
     N = CRB + CA + D;
     
     % nonlinear surge damping
