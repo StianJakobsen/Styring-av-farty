@@ -122,18 +122,25 @@ simdata = zeros(Ns+1,14);                % table of simulation data
 CRB_star = [0 0 0
              0 0 m*U_d
              0 0 m*xg*U_d];
+         
 CA_star = [0 0 0
             0 0 -Xudot*U_d
-            -2*Xudot*U_d 0 0];  
+            -0 (Xudot-Yvdot)*U_d -Yrdot*U_d];  
+        
 M = MRB + MA;
 N = CRB_star + CA_star + D;
 
 B_delta = Bu(U_d, delta);
-D_delta = [0 0
-           0 0
-           0 0];
+D_delta = [0; 0];
        
-[num,denum] = ss2tf(-M\N, M\B_delta, eye(3), D_delta);
+[num,denum] = ss2tf(-M(2:3,2:3)\N(2:3,2:3), M(2:3,2:3)\b_lin, [0 1], 0);
+
+K = num(3)/denum(3);
+T_3 = num(2)/num(3);
+
+T_12 = denum(2)/denum(3); % T1 + T2
+T_nomoto = T_12 - T_3;
+%169.54
 for i=1:Ns+1
 
     t = (i-1) * h;                      % time (s)
