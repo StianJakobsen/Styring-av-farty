@@ -1,9 +1,10 @@
-    % Project in TTK4190 Guidance and Control of Vehicles 
+% Project in TTK4190 Guidance and Control of Vehicles 
 %
 % Author:           My name
 % Study program:    My study program
 
-clear;
+clear all;
+%close all;
 clc;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,28 +98,6 @@ Bu = @(u_r,delta) [ (1-t_thr)  -u_r^2 * X_delta2 * delta
 % Heading Controller
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% rudder control law
-wb = 0.06;
-zeta = 1;
-wn = 1 / sqrt( 1 - 2*zeta^2 + sqrt( 4*zeta^4 - 4*zeta^2 + 2) ) * wb;
-
-% linearized sway-yaw model (see (7.15)-(7.19) in Fossen (2021)) used
-% for controller design. The code below should be modified.
-N_lin = [];
-b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
-
-% initial states
-eta = [0 0 0]';
-nu  = [0.1 0 0]';
-delta = 0;
-n = 0;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% MAIN LOOP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,14);                % table of simulation data
-
-
 CRB_star = [0 0 0
              0 0 m*U_d
              0 0 m*xg*U_d];
@@ -130,9 +109,9 @@ CA_star = [0 0 0
 M = MRB + MA;
 N = CRB_star + CA_star + D;
 
-B_delta = Bu(U_d, delta);
-D_delta = [0; 0];
-       
+b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
+
+
 [num,denum] = ss2tf(-M(2:3,2:3)\N(2:3,2:3), M(2:3,2:3)\b_lin, [0 1], 0);
 
 K = num(3)/denum(3);
@@ -141,7 +120,41 @@ T_3 = num(2)/num(3);
 T_12 = denum(2)/denum(3); % T1 + T2
 T_nomoto = T_12 - T_3;
 %169.54 nice
+
+d_nomoto = 1/K;
+m_nomoto = T/K;
+
+% rudder control law
+wb = 0.06;
+zeta = 1;
+wn = 1 / sqrt( 1 - 2*zeta^2 + sqrt( 4*zeta^4 - 4*zeta^2 + 2) ) * wb;
+
+Kp = m_nomoto* wn^2 - k;
+Kd = 2*zeta*wn*m_nomoto - d_nomoto;
+Ki = wn*Kp/10;
+
+% linearized sway-yaw model (see (7.15)-(7.19) in Fossen (2021)) used
+% for controller design. The code below should be modified.
+
+% initial states
+eta = [0 0 0]';
+nu  = [0.1 0 0]';
+delta = 0;
+n = 0;
+x_d = [0 0 0]';
+e_int = 0; % integral state for the error
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MAIN LOOP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+simdata = zeros(Ns+1,14);                % table of simulation data
+
+
+
 for i=1:Ns+1
+    if i > Ns/2
+        psi_ref = -20*pi/180;
+    end
 
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
@@ -195,15 +208,23 @@ for i=1:Ns+1
     d = -[Xns Ycf Ncf]';
     
     % reference models
-    psi_d = psi_ref;
-    r_d = 0;
+    %[A_ref, B_ref, C_ref, D_ref] = tf2ss(wn^3, [1, (2*zeta+1)*wn, (2*zeta+1)*wn^2, wn^3]);
+    A_ref = [0 1 0; 0 0 1; -wn^3 -(2*zeta+1)*wn^2 -(2*zeta+1)*wn];
+    B_ref = [0 0 wn^3]';
+    x_d_dot = A_ref*x_d + B_ref*psi_ref;
+    psi_d = x_d(1);
+    r_d = x_d(2);
     u_d = U_d;
+    
+    w_ref = 0.03;
     
     % thrust 
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
         
     % control law
-    delta_c = 0.1;              % rudder angle command (rad)
+    e = -[psi_d - eta(3); r_d - nu(3)];
+    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
+    %delta_c = 0.1;              % rudder angle command (rad)
     
     % ship dynamics
     u = [ thr delta ]';
@@ -233,7 +254,9 @@ for i=1:Ns+1
     eta = euler2(eta_dot,eta,h);
     nu  = euler2(nu_dot,nu,h);
     delta = euler2(delta_dot,delta,h);   
-    n  = euler2(n_dot,n,h);    
+    n  = euler2(n_dot,n,h);
+    x_d = euler2(x_d_dot,x_d,h);
+    e_int = euler2(e(1), e_int, h);
     
 end
 
@@ -263,6 +286,7 @@ title('North-East positions (m)'); xlabel('time (s)');
 subplot(312)
 plot(t,psi,t,psi_d,'linewidth',2);
 title('Actual and desired yaw angles (deg)'); xlabel('time (s)');
+legend('Actual', 'Desired')
 subplot(313)
 plot(t,r,t,r_d,'linewidth',2);
 title('Actual and desired yaw rates (deg/s)'); xlabel('time (s)');
@@ -275,9 +299,11 @@ title('Actual and desired surge velocities (m/s)'); xlabel('time (s)');
 subplot(312)
 plot(t,n,t,n_c,'linewidth',2);
 title('Actual and commanded propeller speed (rpm)'); xlabel('time (s)');
+legend('Actual', 'Desired')
 subplot(313)
 plot(t,delta,t,delta_c,'linewidth',2);
 title('Actual and commanded rudder angles (deg)'); xlabel('time (s)');
+
 
 figure(3) 
 figure(gcf)
@@ -287,5 +313,6 @@ title('Actual surge velocity (m/s)'); xlabel('time (s)');
 subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
+
 
 
