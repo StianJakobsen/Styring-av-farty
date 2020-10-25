@@ -166,6 +166,8 @@ for i=1:Ns+1
     % current (should be added here)
     nu_r = nu;
     gamma_w = eta(3) - betaVw - pi;
+    
+    
     % wind (should be added here)
     if t > 200
         Ywind = 0;%1/2*rho_a*Vw*cy*sin(gamma_w)*A_Lw; % expression for wind moment in sway should be added.
@@ -225,7 +227,7 @@ for i=1:Ns+1
     e = -[psi_d - eta(3); r_d - nu(3)];
     delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
     %delta_c = 0.1;              % rudder angle command (rad)
-    
+        
     % ship dynamics
     u = [ thr delta ]';
     tau = Bu(nu_r(1),delta) * u;
@@ -236,6 +238,14 @@ for i=1:Ns+1
     if abs(delta_c) >= delta_max
         delta_c = sign(delta_c)*delta_max;
     end
+    
+%     Anti-integrator windup
+%     if Ki~=0
+%         u_unsat = -(Kp*e(1) + Ki*e_int + Kd*e(2));
+% %         e_int = e_int + h/Ki * (delta_c - u_unsat);
+%         e_int = euler2(delta_c - u_unsat, e_int, h/Ki);
+%     end
+
     
     delta_dot = delta_c - delta;
     if abs(delta_dot) >= Ddelta_max
@@ -257,7 +267,6 @@ for i=1:Ns+1
     n  = euler2(n_dot,n,h);
     x_d = euler2(x_d_dot,x_d,h);
     e_int = euler2(e(1), e_int, h);
-    
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

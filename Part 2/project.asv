@@ -142,6 +142,7 @@ nu  = [0.1 0 0]';
 delta = 0;
 n = 0;
 x_d = [0 0 0]';
+e_int = 0; % integral state for the error
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
@@ -151,6 +152,9 @@ simdata = zeros(Ns+1,14);                % table of simulation data
 
 
 for i=1:Ns+1
+    if i > Ns/2
+        psi_ref = -20*pi/180;
+    end
 
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
@@ -162,6 +166,8 @@ for i=1:Ns+1
     % current (should be added here)
     nu_r = nu;
     gamma_w = eta(3) - betaVw - pi;
+    
+    
     % wind (should be added here)
     if t > 200
         Ywind = 0;%1/2*rho_a*Vw*cy*sin(gamma_w)*A_Lw; % expression for wind moment in sway should be added.
@@ -218,9 +224,14 @@ for i=1:Ns+1
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
         
     % control law
-    e = [psi_d - eta(3); r_d - nu(3)];
-    delta_c = Kp*e(1) + Kd*e(2)
-    delta_c = 0.1;              % rudder angle command (rad)
+    e = -[psi_d - eta(3); r_d - nu(3)];
+    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
+    %delta_c = 0.1;              % rudder angle command (rad)
+    
+    if ki~=0
+        u_unsat = kp*e + ki*e_int + kd*e(2);
+        e_int = e_int + h/ki * (delta_c - u_unsat);
+    end
     
     % ship dynamics
     u = [ thr delta ]';
@@ -252,6 +263,7 @@ for i=1:Ns+1
     delta = euler2(delta_dot,delta,h);   
     n  = euler2(n_dot,n,h);
     x_d = euler2(x_d_dot,x_d,h);
+    e_int = euler2(e(1), e_int, h);
     
 end
 
@@ -281,6 +293,7 @@ title('North-East positions (m)'); xlabel('time (s)');
 subplot(312)
 plot(t,psi,t,psi_d,'linewidth',2);
 title('Actual and desired yaw angles (deg)'); xlabel('time (s)');
+legend('Actual', 'Desired')
 subplot(313)
 plot(t,r,t,r_d,'linewidth',2);
 title('Actual and desired yaw rates (deg/s)'); xlabel('time (s)');
@@ -293,9 +306,11 @@ title('Actual and desired surge velocities (m/s)'); xlabel('time (s)');
 subplot(312)
 plot(t,n,t,n_c,'linewidth',2);
 title('Actual and commanded propeller speed (rpm)'); xlabel('time (s)');
+legend('Actual', 'Desired')
 subplot(313)
 plot(t,delta,t,delta_c,'linewidth',2);
 title('Actual and commanded rudder angles (deg)'); xlabel('time (s)');
+
 
 figure(3) 
 figure(gcf)
@@ -305,5 +320,6 @@ title('Actual surge velocity (m/s)'); xlabel('time (s)');
 subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
+
 
 
