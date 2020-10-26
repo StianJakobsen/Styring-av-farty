@@ -170,8 +170,8 @@ for i=1:Ns+1
     
     % wind (should be added here)
     if t > 200
-        Ywind = 0;%1/2*rho_a*Vw*cy*sin(gamma_w)*A_Lw; % expression for wind moment in sway should be added.
-        Nwind = 0;%1/2*rho_a*Vw*cn*sin(2*gamma_w)*A_Lw*L; % expression for wind moment in yaw should be added.
+        Ywind = 1/2*rho_a*Vw*cy*sin(gamma_w)*A_Lw; % expression for wind moment in sway should be added.
+        Nwind = 1/2*rho_a*Vw*cn*sin(2*gamma_w)*A_Lw*L; % expression for wind moment in yaw should be added.
     else
         Ywind = 0;
         Nwind = 0;
