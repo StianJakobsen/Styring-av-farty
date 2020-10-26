@@ -164,7 +164,7 @@ for i=1:Ns+1
     V_c = [u_c, v_c, 0]';
     
     % current (should be added here)
-    nu_r = nu;
+    nu_r = nu - V_c;
     gamma_w = eta(3) - betaVw - pi;
     
     
@@ -211,14 +211,15 @@ for i=1:Ns+1
     
     % reference models
     %[A_ref, B_ref, C_ref, D_ref] = tf2ss(wn^3, [1, (2*zeta+1)*wn, (2*zeta+1)*wn^2, wn^3]);
-    A_ref = [0 1 0; 0 0 1; -wn^3 -(2*zeta+1)*wn^2 -(2*zeta+1)*wn];
-    B_ref = [0 0 wn^3]';
+    w_ref = 0.03;
+    A_ref = [0 1 0; 0 0 1; -w_ref^3 -(2*zeta+1)*w_ref^2 -(2*zeta+1)*w_ref];
+    B_ref = [0 0 w_ref^3]';
     x_d_dot = A_ref*x_d + B_ref*psi_ref;
     psi_d = x_d(1);
     r_d = x_d(2);
     u_d = U_d;
     
-    w_ref = 0.03;
+    
     
     % thrust 
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
