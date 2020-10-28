@@ -14,7 +14,7 @@ h  = 0.1;    % sampling time [s]
 Ns = 10000;  % no. of samples
 
 psi_ref = 10 * pi/180;  % desired yaw angle (rad)
-U_d = 7;                % desired cruise speed (m/s)
+U_d = 9;                % desired cruise speed (m/s)
                
 % ship parameters 
 m = 17.0677e6;          % mass (kg)
