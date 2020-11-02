@@ -148,13 +148,13 @@ e_int = 0; % integral state for the error
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 simdata = zeros(Ns+1,14);                % table of simulation data
-
+nu_r_data = zeros(Ns+1,3);
 
 
 for i=1:Ns+1
-    if i > Ns/2
-        psi_ref = -20*pi/180;
-    end
+%     if i > Ns/2
+%         psi_ref = -20*pi/180;
+%     end
 
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
@@ -166,7 +166,6 @@ for i=1:Ns+1
     % current (should be added here)
     nu_r = nu - V_c;
     gamma_w = eta(3) - betaVw - pi;
-    
     
     % wind (should be added here)
     if t > 200
@@ -226,8 +225,8 @@ for i=1:Ns+1
         
     % control law
     e = -[psi_d - eta(3); r_d - nu(3)];
-    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
-    %delta_c = 0.1;              % rudder angle command (rad)
+%     delta_c = (Kp*e(1) + Ki*e_int + Kd*e(2));
+    delta_c = 0.1;              % rudder angle command (rad)
         
     % ship dynamics
     u = [ thr delta ]';
@@ -260,7 +259,8 @@ for i=1:Ns+1
     
     % store simulation data in a table (for testing)
     simdata(i,:) = [t n_c delta_c n delta eta' nu' u_d psi_d r_d];       
-     
+    nu_r_data(i,:) = nu_r.';
+    
     % Euler integration
     eta = euler2(eta_dot,eta,h);
     nu  = euler2(nu_dot,nu,h);
@@ -288,11 +288,18 @@ u_d     = simdata(:,12);                % m/s
 psi_d   = (180/pi) * simdata(:,13);     % deg
 r_d     = (180/pi) * simdata(:,14);     % deg/s
 
+beta_c = atan(v./u);
+v_r = nu_r_data(:,2);
+U_r = sqrt(nu_r_data(:,1).^2 + nu_r_data(:,2).^2);
+beta = asin(v_r./U_r);
+
+
+
 figure(1)
 figure(gcf)
 subplot(311)
 plot(y,x,'linewidth',2); axis('equal')
-title('North-East positions (m)'); xlabel('time (s)'); 
+title('North-East positions (m)'); 
 subplot(312)
 plot(t,psi,t,psi_d,'linewidth',2);
 title('Actual and desired yaw angles (deg)'); xlabel('time (s)');
@@ -324,5 +331,13 @@ subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
 
-
+figure(4)
+plot(t,rad2deg(beta_c),'linewidth',2)
+hold on
+plot(t,rad2deg(beta),'linewidth',2)
+legend("beta_c","beta")
+xlabel('time (s)');
+ylabel('angles (deg)');
+title('Crab angle vs Sideslip');
+hold off
 
