@@ -270,7 +270,7 @@ for i=1:Ns+1
     T_n = rho*Dia^4*KT*abs(n)*n;
     Q_n = rho*Dia^5*KQ*abs(n)*n;
     
-    T_d = (U_d*Xu)/(t_thr-1);
+    T_d = (U_d*Xu)/(t_thr-1)-1e6;
     
     n_d = sign(T_d)*sqrt(T_d/(rho*Dia^4*KT));
     
@@ -349,3 +349,7 @@ title('Actual surge velocity (m/s)'); xlabel('time (s)');
 subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
+
+U = sqrt(u.^2+v.^2);
+figure(4)
+plot(t, U, 'linewidth', 2);

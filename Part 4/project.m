@@ -236,7 +236,7 @@ for i=1:Ns+1
         
     % control law
     e = -[psi_d - eta(3); r_d - nu(3)];
-    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
+    delta_c = (Kp*e(1) + Ki*e_int + Kd*e(2));
     %delta_c = 0.1;              % rudder angle command (rad)
         
     % ship dynamics
@@ -270,16 +270,16 @@ for i=1:Ns+1
     T_n = rho*Dia^4*KT*abs(n)*n;
     Q_n = rho*Dia^5*KQ*abs(n)*n;
     
-    T_d = (U_d*Xu)/(t_thr-1);
+    T_d = (U_d*Xu)/(t_thr-1)-1e6;
     
-    n_d = sgn(T_d)*sqrt(abs(T_d))/
+    n_d = sign(T_d)*sqrt(T_d/(rho*Dia^4*KT));
     
-    Q_d = rho*Dia^5*KQ*abs(n_c)*n_c;
+    Q_d = rho*Dia^5*KQ*abs(n_d)*n_d;
 
     
     % Calculate Qm
-    Y = Q_d/Tm;
-    Q_dot = 1/Tm*(-Qm+Km*Y);
+    Y = Q_d/Km;
+    Qm_dot = 1/Tm*(-Qm+Km*Y);
     
     n_dot = (1/Im)*(Qm - Q_n);
     
@@ -293,7 +293,7 @@ for i=1:Ns+1
     n  = euler2(n_dot,n,h);
     x_d = euler2(x_d_dot,x_d,h);
     e_int = euler2(e(1), e_int, h);
-    Qm = euler2(Q_dot, Qm, h);
+    Qm = euler2(Qm_dot, Qm, h);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -349,3 +349,7 @@ title('Actual surge velocity (m/s)'); xlabel('time (s)');
 subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
+
+U = sqrt(u.^2+v.^2);
+figure(4)
+plot(t, U, 'linewidth', 2);
