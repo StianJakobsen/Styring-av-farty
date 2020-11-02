@@ -1,0 +1,6 @@
+function chi_d = guidance(pos, wp, lookahead, step)
+    K_p = 1/lookahead;
+    [x_ref, y_ref] = WP(:,
+    
+end
+

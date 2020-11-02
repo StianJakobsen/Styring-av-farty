@@ -177,6 +177,7 @@ for i=1:Ns+1
     if (x_t - eta(1))^2 + (y_t - eta(2))^2 <= R_los^2 
         display(i)
         display((x_t - eta(1))^2 + (y_t - eta(2))^2)
+        breakl
         if i > 800
             break
         end
