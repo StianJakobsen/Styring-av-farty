@@ -4,7 +4,7 @@
 % Study program:    My study program
 
 clear all;
-%close all;
+close all;
 clc;
 
 load('WP.mat')
@@ -12,10 +12,10 @@ load('WP.mat')
 % USER INPUTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 h  = 0.1;    % sampling time [s]
-Ns = 10000;  % no. of samples
+Ns = 90000;  % no. of samples
 
 psi_ref = 10 * pi/180;  % desired yaw angle (rad)
-U_d = 9;                % desired cruise speed (m/s)
+U_d = 7;                % desired cruise speed (m/s)
                
 % ship parameters 
 m = 17.0677e6;          % mass (kg)
@@ -133,7 +133,7 @@ T_nomoto = T_12 - T_3;
 %169.54 nice
 
 d_nomoto = 1/K;
-m_nomoto = T/K;
+m_nomoto = T_nomoto/K;
 
 % rudder control law
 wb = 0.06;
@@ -143,6 +143,7 @@ wn = 1 / sqrt( 1 - 2*zeta^2 + sqrt( 4*zeta^4 - 4*zeta^2 + 2) ) * wb;
 Kp = m_nomoto* wn^2 - k;
 Kd = 2*zeta*wn*m_nomoto - d_nomoto;
 Ki = wn*Kp/10;
+
 
 % linearized sway-yaw model (see (7.15)-(7.19) in Fossen (2021)) used
 % for controller design. The code below should be modified.
@@ -158,35 +159,37 @@ e_int = 0; % integral state for the error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,14);                % table of simulation data
+simdata = zeros(Ns+1,15);                % table of simulation data
 
 Qm = 0;
 
-R_los = 2*L;
+R_los = 4*L;
 step = 1;
 x_ref = WP(1,step); y_ref = WP(2,step);
 x_t = WP(1, step+1); y_t = WP(2, step+1);
 
 psi_d = guidance(eta, x_t, y_t, x_ref, y_ref, R_los);
 display(psi_d)
+% Ki = 0;
 for i=1:Ns+1
 %     if i > Ns/2
 %         psi_ref = -20*pi/180;
 %     end
-    
+%     eta(3) = wrapTo2Pi(eta(3));
     if (x_t - eta(1))^2 + (y_t - eta(2))^2 <= R_los^2 
-        display(i)
-        display((x_t - eta(1))^2 + (y_t - eta(2))^2)
-        if i > 800
-            break
-        end
+        disp(i)
+        disp((x_t - eta(1))^2 + (y_t - eta(2))^2)
         step = step + 1;
-        x_ref = WP(1,step); y_ref = WP(2,step);
-        x_t = WP(1, step+1); y_t = WP(2, step+1);
+        if step < size(WP,2)
+            x_ref = WP(1,step); y_ref = WP(2,step);
+            x_t = WP(1, step+1); y_t = WP(2, step+1);
+        end
     end
     
-    psi_d = guidance(eta, x_t, y_t, x_ref, y_ref, R_los);
-    display(psi_d)
+    chi_d = guidance(eta, x_t, y_t, x_ref, y_ref, R_los);
+    psi_ref = chi_d;
+%     psi_ref = deg2rad(-150);
+%     display(psi_d)
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
     
@@ -242,11 +245,11 @@ for i=1:Ns+1
     
     % reference models
     %[A_ref, B_ref, C_ref, D_ref] = tf2ss(wn^3, [1, (2*zeta+1)*wn, (2*zeta+1)*wn^2, wn^3]);
-    w_ref = 0.03;
+    w_ref = 0.08;
     A_ref = [0 1 0; 0 0 1; -w_ref^3 -(2*zeta+1)*w_ref^2 -(2*zeta+1)*w_ref];
     B_ref = [0 0 w_ref^3]';
-    x_d_dot = A_ref*x_d + B_ref*psi_d;
-    %psi_d = x_d(1);
+    x_d_dot = A_ref*x_d + B_ref*psi_ref;
+    psi_d = x_d(1);
     r_d = x_d(2);
     u_d = U_d;
     
@@ -256,8 +259,8 @@ for i=1:Ns+1
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
         
     % control law
-    e = -[psi_d - eta(3); r_d - nu(3)];
-    delta_c = (Kp*e(1) + Ki*e_int + Kd*e(2));
+    e = [ssa(eta(3) - psi_d);nu(3) - r_d];
+    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
     %delta_c = 0.1;              % rudder angle command (rad)
         
     % ship dynamics
@@ -272,11 +275,11 @@ for i=1:Ns+1
     end
     
 %     Anti-integrator windup
-%     if Ki~=0
-%         u_unsat = -(Kp*e(1) + Ki*e_int + Kd*e(2));
-% %         e_int = e_int + h/Ki * (delta_c - u_unsat);
-%         e_int = euler2(delta_c - u_unsat, e_int, h/Ki);
-%     end
+    if Ki~=0
+        u_unsat = (Kp*e(1) + Ki*e_int + Kd*e(2));
+%         e_int = e_int + h/Ki * (delta_c - u_unsat);
+        e_int = euler2(delta_c - u_unsat, e_int, h/Ki);
+    end
 
     
     delta_dot = delta_c - delta;
@@ -305,7 +308,7 @@ for i=1:Ns+1
     n_dot = (1/Im)*(Qm - Q_n);
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_c delta_c n delta eta' nu' u_d psi_d r_d];       
+    simdata(i,:) = [t n_c delta_c n delta eta' nu' u_d psi_d r_d chi_d];       
      
     % Euler integration
     eta = euler2(eta_dot,eta,h);
@@ -371,6 +374,6 @@ subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
 
-U = sqrt(u.^2+v.^2);
 figure(4)
-plot(t, U, 'linewidth', 2);
+plot(y,x,'linewidth',2); axis('equal');
+plot_path(WP);

@@ -1,21 +1,15 @@
-clear all
-clc 
-close all
+function out = plot_path(WP)
+    hold on
 
-load('WP.mat')
+    siz=size(WP);
 
-figure(gcf)
+    for ii=1:(siz(2)-1)   
 
-hold on
+    plot([WP(2,ii), WP(2,ii+1)], [WP(1,ii), WP(1,ii+1)], 'r-x')
 
-siz=size(WP);
+    end
 
-for ii=1:(siz(2)-1)   
+    %plot(y,x,'linewidth',2); axis('equal')
 
-plot([WP(2,ii), WP(2,ii+1)], [WP(1,ii), WP(1,ii+1)], 'r-x')
-
+    title('North-East positions (m)');
 end
-
-%plot(y,x,'linewidth',2); axis('equal')
-
-title('North-East positions (m)');

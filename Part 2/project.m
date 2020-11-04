@@ -14,7 +14,7 @@ h  = 0.1;    % sampling time [s]
 Ns = 10000;  % no. of samples
 
 psi_ref = 10 * pi/180;  % desired yaw angle (rad)
-U_d = 9;                % desired cruise speed (m/s)
+U_d = 7;                % desired cruise speed (m/s)
                
 % ship parameters 
 m = 17.0677e6;          % mass (kg)
@@ -104,7 +104,7 @@ CRB_star = [0 0 0
          
 CA_star = [0 0 0
             0 0 -Xudot*U_d
-            -0 (Xudot-Yvdot)*U_d -Yrdot*U_d];  
+            0 (Xudot-Yvdot)*U_d -Yrdot*U_d];  
         
 M = MRB + MA;
 N = CRB_star + CA_star + D;
