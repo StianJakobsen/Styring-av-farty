@@ -163,12 +163,12 @@ simdata = zeros(Ns+1,15);                % table of simulation data
 
 Qm = 0;
 
-R_los = 4*L;
+R_los = 16*L;
 step = 1;
 x_ref = WP(1,step); y_ref = WP(2,step);
 x_t = WP(1, step+1); y_t = WP(2, step+1);
 
-psi_d = guidance(eta, x_t, y_t, x_ref, y_ref, R_los);
+psi_d = guidance(eta, x_t, y_t, x_ref, y_ref, h);
 display(psi_d)
 % Ki = 0;
 for i=1:Ns+1
@@ -177,8 +177,6 @@ for i=1:Ns+1
 %     end
 %     eta(3) = wrapTo2Pi(eta(3));
     if (x_t - eta(1))^2 + (y_t - eta(2))^2 <= R_los^2 
-        disp(i)
-        disp((x_t - eta(1))^2 + (y_t - eta(2))^2)
         step = step + 1;
         if step < size(WP,2)
             x_ref = WP(1,step); y_ref = WP(2,step);
@@ -186,7 +184,7 @@ for i=1:Ns+1
         end
     end
     
-    chi_d = guidance(eta, x_t, y_t, x_ref, y_ref, R_los);
+    chi_d = guidance(eta, x_t, y_t, x_ref, y_ref, h);
     psi_ref = chi_d;
 %     psi_ref = deg2rad(-150);
 %     display(psi_d)
