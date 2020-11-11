@@ -150,9 +150,9 @@ E_kd = h*E_kc;
 x0 = [0 0 0]';
 x_pred = x0;
 
-Q_d = 0.1*eye(2);
-P_pred = 0.0001*eye(3);
-R_d = deg2rad(0.5)*eye(1);
+Q_kd = diag([deg2rad(0.1) deg2rad(0.01)]);
+P_pred = eye(3);
+R_d = 10*deg2rad(0.25)*eye(1);
 
 % rudder control law
 wb = 0.06;
@@ -209,18 +209,19 @@ for i=1:Ns+1
     IKC = eye(3) - K_kalman*C_kd;
     
     %Measurment
-    y = C_kd*eta;
+    y = eta_noise(3);
     
-    x_hat = x_pred + K_kalman*(y-C_kd*x_pred);
+    x_hat = x_pred + K_kalman*(ssa(y-C_kd*x_pred));
     P_hat = IKC*P_pred*IKC.' + K_kalman*R_d*K_kalman.';
     
     %Predictions
     x_pred = A_kd*x_hat + B_kd*delta;
 %     x_pred = x_pred + [0;wgn(1,1,0);wgn(1,1,0)];
-    P_pred = A_kd*P_hat*A_kd.' + E_kd*Q_d*E_kd.';
+    P_pred = A_kd*P_hat*A_kd.' + E_kd*Q_kd*E_kd.';
     
     chi_d = guidance(eta, x_t, y_t, x_ref, y_ref, h);
     psi_ref = chi_d;
+    
 %     psi_ref = deg2rad(-150);
 %     display(psi_d)
     t = (i-1) * h;                      % time (s)
@@ -285,8 +286,6 @@ for i=1:Ns+1
     psi_d = x_d(1);
     r_d = x_d(2);
     u_d = U_d;
-    
-   
     
     % thrust 
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)

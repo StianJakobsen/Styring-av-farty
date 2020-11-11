@@ -151,8 +151,8 @@ x0 = [0 0 0]';
 x_pred = x0;
 
 Q_d = 0.1*eye(2);
-P_pred = 0.0000000000000000000001eye(3);
-R_d = deg2rad(0.5)*eye(1);
+P_pred = 0.0001*eye(3);
+R_d = deg2rad(0.3)*eye(1);
 
 % rudder control law
 wb = 0.06;
@@ -209,7 +209,7 @@ for i=1:Ns+1
     IKC = eye(3) - K_kalman*C_kd;
     
     %Measurment
-    y = C_kd*eta;
+    y = eta(3);
     
     x_hat = x_pred + K_kalman*(y-C_kd*x_pred);
     P_hat = IKC*P_pred*IKC.' + K_kalman*R_d*K_kalman.';
@@ -285,8 +285,7 @@ for i=1:Ns+1
     psi_d = x_d(1);
     r_d = x_d(2);
     u_d = U_d;
-    
-   
+ 
     
     % thrust 
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
