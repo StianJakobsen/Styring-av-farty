@@ -291,10 +291,13 @@ for i=1:Ns+1
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
         
     % control law
-    e = [ssa(eta(3) - psi_d);nu(3) - r_d];
-    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
+%     e = [ssa(eta(3) - psi_d);nu(3) - r_d];
+%     delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
     %delta_c = 0.1;              % rudder angle command (rad)
         
+    e = [ssa(x_hat(1) - psi_d);x_hat(2) - r_d];
+    delta_c = -(Kp*e(1) + Ki*e_int + Kd*e(2));
+    
     % ship dynamics
     u = [ thr delta ]';
     tau = Bu(nu_r(1),delta) * u;
@@ -430,11 +433,11 @@ figure(6)
 subplot(311)
 plot(t,psi_hat, t, psi,'linewidth',2);
 legend('Estimated $\psi$', 'True $\psi$','Interpreter','latex');
-title('Heading vs noisy heading')
+title('Estimated Heading vs True Heading')
 subplot(312)
 plot(t,r_hat, t, r,'linewidth',2);
 legend('Estimated $r$', 'True $r$', 'Interpreter','latex')
-title('Yaw rate vs noisy yaw rate')
+title('Estimated yaw rate vs true yaw rate')
 subplot(313)
 plot(t,bias,'linewidth',2);
 title('Bias')
